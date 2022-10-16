@@ -11,17 +11,18 @@ const keySchema = new Schema(
     privateKey: {
       type: String,
     },
-    uniqueId: {
-      type: String,
+    user_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Users',
     },
   },
   { timestamps: true }
 )
 
-keySchema.statics.saveNewKey = async function (data) {
+keySchema.statics.saveNewKeys = async function (data) {
   try {
-    const { uniqueId, privateKey, publicKey } = data
-    const newKey = await this.create({ uniqueId, privateKey, publicKey })
+    const { user_id, privateKey, publicKey } = data
+    const newKey = await this.create({ user_id, privateKey, publicKey })
     return newKey
   } catch (e) {
     console.log(e)
@@ -29,19 +30,19 @@ keySchema.statics.saveNewKey = async function (data) {
   }
 }
 
-keySchema.statics.findKey = async function (data) {
+keySchema.statics.findKeys = async function (data) {
   try {
-    const { uniqueId, publicKey } = data
-    const key = await this.findOne({ uniqueId, publicKey })
+    const { user_id } = data
+    const key = await this.findOne({ user_id })
     return key
   } catch (e) {
     console.log(e.message)
   }
 }
 
-keySchema.statics.deleteKey = async function (uniqueId) {
+keySchema.statics.deleteKeys = async function (user_id) {
   try {
-    const deletedKey = await this.findOneAndDelete(uniqueId)
+    const deletedKey = await this.findOneAndDelete(user_id)
     return deletedKey
   } catch (e) {
     console.log(e.message)

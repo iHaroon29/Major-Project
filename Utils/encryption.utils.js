@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt')
+const paillier = require('paillier-bigint')
 const jwt = require('jsonwebtoken')
 const secret = process.env.SECRET || 'secret'
 const crypto = require('crypto')
@@ -10,12 +11,16 @@ const decipher = crypto.createDecipheriv('aes-256-cbc', Securitykey, initVector)
 module.exports = {
   async encryptData({ data, publicKey }) {
     try {
+      const encryptedData = await publicKey.encrypt(data)
+      return encryptedData
     } catch (e) {
       console.log(e.message)
     }
   },
   async decryptData({ data, privateKey }) {
     try {
+      const decryptedData = await privateKey.decrypt(data)
+      return decryptedData
     } catch (e) {
       console.log(e.message)
     }
@@ -89,11 +94,15 @@ module.exports = {
         keyObject._p = _p.toString()
         keyObject._q = _q.toString()
       }
-      console.log('Finished-conversion')
       return keyObject
     } catch (e) {
       console.log(e)
       console.log(e.message)
     }
+  },
+  async objectToKey() {
+    try {
+      const OG_KEY = {}
+    } catch (e) {}
   },
 }

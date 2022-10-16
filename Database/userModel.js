@@ -1,5 +1,6 @@
 const { Schema } = require('mongoose')
 const connection = require('./dbConfig')
+const ObjectId = require('mongoose').Types.ObjectId
 
 const userSchema = new Schema(
   {
@@ -29,8 +30,11 @@ userSchema.statics.saveUsers = async function (data) {
 
 userSchema.statics.findUsers = async function (data) {
   try {
-    const { username } = data
-    const existingUser = await this.findOne({ username })
+    const { username, userId } = data
+    let query = {}
+    if (userId) query._id = new ObjectId(userId)
+    if (username) query.username = username
+    const existingUser = await this.findOne(query)
     return existingUser
   } catch (e) {
     console.log(e.message)

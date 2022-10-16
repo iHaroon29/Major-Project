@@ -8,6 +8,11 @@ Router.route('/generateKeys').get([
   encryptionController.isAuthenticated,
   encryptionController.generateKeys,
 ])
+
+Router.route('/encrypt').post([
+  encryptionController.isAuthenticated,
+  encryptionController.dataEncryption,
+])
 // Router.route('/:userId').get(encryptionController.dataEncryption)
 
 module.exports = Router

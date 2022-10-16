@@ -1,4 +1,4 @@
-const paillier = require('paillier-bigint')
+const { PublicKey } = require('paillier-bigint')
 const keyModel = require('../Database/keyModel')
 const userModel = require('../Database/userModel')
 
@@ -24,14 +24,13 @@ module.exports = {
           .status(400)
           .json({ message: `${username} already exists!!`, auth: false })
       const hashedPassword = await dataHashing(password)
-      const token = await jwtGeneration(username)
       const newUser = await userModel.saveUsers({
         username,
         password: hashedPassword,
       })
+      const token = await jwtGeneration(newUser._id)
       res.status(200).json({ newUser, token, auth: true })
     } catch (e) {
-      console.log(e)
       res.status(500).send(e)
     }
   },
@@ -51,7 +50,7 @@ module.exports = {
         return res
           .status(400)
           .json({ message: 'Invalid Credentials!!!', auth: false })
-      const token = await jwtGeneration(username)
+      const token = await jwtGeneration(user._id)
       res.status(200).json({ user, token, auth: true })
     } catch (e) {
       res.status(500).send(e)
@@ -89,7 +88,7 @@ module.exports = {
       const encyrptedPrivateKey = await testEncrypt(keyObjectPrivate)
       const hashedPublicKey = await dataHashing(JSON.stringify(keyObjectPublic))
       const newKey = await keyModel.saveNewKey({
-        uniqueId: decodedTokenData,
+        user_id: decodedTokenData,
         publicKey: keyObjectPublic,
         privateKey: encyrptedPrivateKey,
       })
@@ -97,7 +96,7 @@ module.exports = {
         username: decodedTokenData,
         keysGenerated: true,
       })
-      res.status(200).send({ hashedPublicKey })
+      res.status(200).json({ hashedPublicKey })
     } catch (e) {
       console.log(e)
       res.status(400).send(e)
@@ -110,26 +109,32 @@ module.exports = {
       )
       const { API_KEY } = req.query
       const { data } = req.body
-      const existingKey = await keyModel.findKeys({ decodedData })
+      const existingKey = await keyModel.findKeys({ user_id: decodedData })
       const dataVerification = await dataVerifying({
         normalData: JSON.stringify(existingKey.publicKey),
         hashedData: API_KEY,
       })
       if (!dataVerification)
         res.status(400).send({ message: 'API_KEY invalid!!' })
+      const regeneratedPublicKey = new PublicKey(
+        (n = BigInt(existingKey.publicKey.n)),
+        (g = BigInt(existingKey.publicKey.g))
+      )
       const encryptedData = await encryptData({
         data,
-        publicKey: existingKey.publicKey,
+        publicKey: regeneratedPublicKey,
       })
-      res.send(encryptedData)
+      res.send({ encryptedData: encryptedData.toString() })
     } catch (e) {
-      res.status(400).send(e)
+      console.log(e.message)
+      res.status(400).send(e.message)
     }
   },
   async dataDecryption(req, res, next) {
     try {
-      const { encryptData } = req.body
-      const decryptedData = await decryptData(encryptData)
+      const { API_KEY } = req.query
+      const { encryptedData } = req.body
+      const decryptedData = await decryptData(Bigint(encryptedData))
       res.send(decryptedData)
     } catch (e) {
       res.status(400).send(e)
