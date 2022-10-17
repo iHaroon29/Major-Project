@@ -1,12 +1,12 @@
+require('dotenv').config()
 const bcrypt = require('bcrypt')
-const paillier = require('paillier-bigint')
 const jwt = require('jsonwebtoken')
 const secret = process.env.SECRET || 'secret'
 const crypto = require('crypto')
-const initVector = crypto.randomBytes(16)
-const Securitykey = crypto.randomBytes(32)
-const cipher = crypto.createCipheriv('aes-256-cbc', Securitykey, initVector)
-const decipher = crypto.createDecipheriv('aes-256-cbc', Securitykey, initVector)
+const initVector = 'abcdefghijklmnop'
+const securitykey = 'abcdefghijklmnopqrstuvwxyzABCDEF'
+const cipher = crypto.createCipheriv('aes-256-cbc', securitykey, initVector)
+const decipher = crypto.createDecipheriv('aes-256-cbc', securitykey, initVector)
 
 module.exports = {
   async encryptData({ data, publicKey }) {
@@ -22,6 +22,7 @@ module.exports = {
       const decryptedData = await privateKey.decrypt(data)
       return decryptedData
     } catch (e) {
+      console.log(e)
       console.log(e.message)
     }
   },
@@ -57,7 +58,6 @@ module.exports = {
     try {
       let encryptedData = cipher.update(JSON.stringify(data), 'utf-8', 'hex')
       encryptedData += cipher.final('hex')
-      console.log('finished-encryption')
       return encryptedData
     } catch (e) {
       console.log(e)
@@ -100,9 +100,10 @@ module.exports = {
       console.log(e.message)
     }
   },
-  async objectToKey() {
+  async objectToKey(key) {
     try {
-      const OG_KEY = {}
-    } catch (e) {}
+    } catch (e) {
+      console.log(e.message)
+    }
   },
 }

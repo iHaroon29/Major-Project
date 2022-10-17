@@ -13,6 +13,10 @@ Router.route('/encrypt').post([
   encryptionController.isAuthenticated,
   encryptionController.dataEncryption,
 ])
-// Router.route('/:userId').get(encryptionController.dataEncryption)
+
+Router.route('/decrypt').post([
+  encryptionController.isAuthenticated,
+  encryptionController.dataDecryption,
+])
 
 module.exports = Router

@@ -1,7 +1,7 @@
 const { PublicKey } = require('paillier-bigint')
 const keyModel = require('../Database/keyModel')
 const userModel = require('../Database/userModel')
-
+const paillier = require('paillier-bigint')
 const {
   dataHashing,
   encryptData,
@@ -12,6 +12,7 @@ const {
   jwtDecoding,
   testEncrypt,
   keyToObjectConverter,
+  testDecrypt,
 } = require('../Utils/encryption.utils')
 
 module.exports = {
@@ -83,11 +84,12 @@ module.exports = {
       const { authorization } = req.headers
       const decodedTokenData = await jwtDecoding(authorization.split(' ')[1])
       const { publicKey, privateKey } = await paillier.generateRandomKeys(3076)
+      console.log(privateKey)
       const keyObjectPublic = await keyToObjectConverter(publicKey)
       const keyObjectPrivate = await keyToObjectConverter(privateKey)
       const encyrptedPrivateKey = await testEncrypt(keyObjectPrivate)
       const hashedPublicKey = await dataHashing(JSON.stringify(keyObjectPublic))
-      const newKey = await keyModel.saveNewKey({
+      const newKey = await keyModel.saveNewKeys({
         user_id: decodedTokenData,
         publicKey: keyObjectPublic,
         privateKey: encyrptedPrivateKey,
@@ -115,13 +117,13 @@ module.exports = {
         hashedData: API_KEY,
       })
       if (!dataVerification)
-        res.status(400).send({ message: 'API_KEY invalid!!' })
-      const regeneratedPublicKey = new PublicKey(
+        return res.status(400).send({ message: 'API_KEY invalid!!' })
+      const regeneratedPublicKey = new paillier.PublicKey(
         (n = BigInt(existingKey.publicKey.n)),
         (g = BigInt(existingKey.publicKey.g))
       )
       const encryptedData = await encryptData({
-        data,
+        data: BigInt(data),
         publicKey: regeneratedPublicKey,
       })
       res.send({ encryptedData: encryptedData.toString() })
@@ -132,11 +134,42 @@ module.exports = {
   },
   async dataDecryption(req, res, next) {
     try {
+      const decodedData = await jwtDecoding(
+        req.headers.authorization.split(' ')[1]
+      )
       const { API_KEY } = req.query
       const { encryptedData } = req.body
-      const decryptedData = await decryptData(Bigint(encryptedData))
-      res.send(decryptedData)
+      const existingKey = await keyModel.findKeys({
+        user_id: decodedData,
+      })
+      const dataVerification = await dataVerifying({
+        normalData: JSON.stringify(existingKey.publicKey),
+        hashedData: API_KEY,
+      })
+      if (!dataVerification)
+        return res.status(400).send({ message: 'API_KEY invalid!!' })
+
+      const decryptedPrivateKey = JSON.parse(
+        await testDecrypt(existingKey.privateKey)
+      )
+      const regeneratedPublicKey = new paillier.PublicKey(
+        (n = BigInt(existingKey.publicKey.n)),
+        (g = BigInt(existingKey.publicKey.g))
+      )
+      const a = new paillier.PrivateKey(
+        (lambda = BigInt(decryptedPrivateKey.lambda)),
+        (mu = BigInt(decryptedPrivateKey.mu)),
+        (publicKey = regeneratedPublicKey),
+        (p = BigInt(decryptedPrivateKey._p)),
+        (q = BigInt(decryptedPrivateKey._q))
+      )
+      const decryptedData = await decryptData({
+        data: BigInt(encryptedData),
+        privateKey: a,
+      })
+      res.send({ decryptedData: decryptedData.toString() })
     } catch (e) {
+      console.log(e)
       res.status(400).send(e)
     }
   },
