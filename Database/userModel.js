@@ -43,11 +43,10 @@ userSchema.statics.findUsers = async function (data) {
 
 userSchema.statics.updateUsers = async function (data) {
   try {
-    const { keysGenerated, username, password } = data
+    const { keysGenerated, username, password, user_id } = data
     let query = {},
       update = {}
-
-    if (username) query.username = username
+    if (user_id) query._id = ObjectId(user_id)
     if (keysGenerated) update.keyGenerated = keysGenerated
 
     return await this.findOneAndUpdate(query, update, { new: true })

@@ -4,9 +4,7 @@ const connection = require('./dbConfig')
 const keySchema = new Schema(
   {
     publicKey: {
-      n: String,
-      _n2: String,
-      g: String,
+      type: String,
     },
     privateKey: {
       type: String,
@@ -19,9 +17,12 @@ const keySchema = new Schema(
   { timestamps: true }
 )
 
-keySchema.statics.saveNewKeys = async function (data) {
+keySchema.statics.saveNewKeys = async function ({
+  user_id,
+  privateKey,
+  publicKey,
+}) {
   try {
-    const { user_id, privateKey, publicKey } = data
     const newKey = await this.create({ user_id, privateKey, publicKey })
     return newKey
   } catch (e) {

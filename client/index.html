@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./styles/style.css" />
+    <title>HE Example</title>
+  </head>
+  <body>
+    <div class="signup_login_holder">
+      <div class="signup_holder">
+        <div class="signup_left"></div>
+        <div class="signup_right">
+          <form action="#">
+            <input type="text" placeholder="Username" />
+            <input type="password" placeholder="Password" />
+          </form>
+        </div>
+      </div>
+      <div class="login_holder">
+        <div class="login_left"></div>
+        <div class="login_right">
+          <form action="#">
+            <input type="text" placeholder="Username" />
+            <input type="password" placeholder="Password" />
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      var myHeaders = new Headers()
+      myHeaders.append(
+        'Authorization',
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiNjM1YTk2ODRhNGJlZTU3YzJkMjJiODM0IiwiaWF0IjoxNjY2ODgxMTU2LCJleHAiOjE2NjY4OTU1NTZ9.aAoKtf3Yg3l3xSB5sdYvfFPVuEzwWhEBrNomhiizUeA'
+      )
+
+      var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow',
+      }
+
+      fetch('http://localhost:8000/generateKeys', requestOptions)
+        .then((response) => response.text())
+        .then((result) => console.log(result))
+        .catch((error) => console.log('error', error))
+    </script>
+    <script src="./js/index.js" type="module"></script>
+  </body>
+</html>

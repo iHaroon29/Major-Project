@@ -9,18 +9,35 @@ const cipher = crypto.createCipheriv('aes-256-cbc', securitykey, initVector)
 const decipher = crypto.createDecipheriv('aes-256-cbc', securitykey, initVector)
 
 module.exports = {
-  async encryptData({ data, publicKey }) {
+  async encryptData(arguments) {
     try {
-      const encryptedData = await publicKey.encrypt(data)
-      return encryptedData
+      const b = []
+      const { publicKey, encoder, data, seal, context } = arguments
+      const regenratedPublicKey = seal.PublicKey()
+      regenratedPublicKey.load(context, publicKey)
+      const encryptor = seal.Encryptor(context, regenratedPublicKey)
+      const test = JSON.stringify(data)
+      for (let i = 0; i < test.length; i++) {
+        b.push(test.charCodeAt(i))
+      }
+      const plainText = encoder.encode(new Int32Array(b))
+      const encryptedData = encryptor.encrypt(plainText)
+      return encryptedData.save()
     } catch (e) {
-      console.log(e.message)
+      console.log(e)
     }
   },
-  async decryptData({ data, privateKey }) {
+  async decryptData(arguments) {
     try {
-      const decryptedData = await privateKey.decrypt(data)
-      return decryptedData
+      const { privateKey, encoder, data, seal, context } = arguments
+      const regenratedSecretKey = seal.SecretKey()
+      regenratedSecretKey.load(context, privateKey)
+      const decryptor = seal.Decryptor(context, regenratedSecretKey)
+      const regeneratedCipherText = seal.CipherText()
+      regeneratedCipherText.load(context, data)
+      const decryptedData = decryptor.decrypt(regeneratedCipherText)
+      const plainText = encoder.decode(decryptedData)
+      return plainText.filter((node) => node !== 0)
     } catch (e) {
       console.log(e)
       console.log(e.message)
