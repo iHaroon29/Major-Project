@@ -89,38 +89,45 @@ module.exports = {
     try {
       const { authorization } = req.headers
       const decodedTokenData = await jwtDecoding(authorization.split(' ')[1])
-      const filename = `PublicKey_${decodedTokenData}.txt`
-      const keyWriteStream = fs.createWriteStream(filename)
-      const existingUser = await userModel.findUsers({
-        userId: decodedTokenData,
-      })
-      if (existingUser.keyGenerated && existingUser)
-        return res.status(400).send({
-          message:
-            'Keys Already Generated. Revoke previous keys to generate new!',
-        })
+      const filenameP = `PublicKey_${decodedTokenData}_1024.txt`
+      const filenamePr = `Private_${decodedTokenData}_1024.txt`
+      const keyWriteStreamP = fs.createWriteStream(filenameP)
+      const keyWriteStreamPr = fs.createWriteStream(filenamePr)
 
+      // const existingUser = await userModel.findUsers({
+      //   userId: decodedTokenData,
+      // })
+      // if (existingUser.keyGenerated && existingUser)
+      //   return res.status(400).send({
+      //     message:
+      //       'Keys Already Generated. Revoke previous keys to generate new!',
+      //   })
+
+      console.time('Key Generation')
       const publicKey = global.SEAL.keyGenerator.createPublicKey()
       const secretKey = global.SEAL.keyGenerator.secretKey()
-
+      console.timeEnd('Key Generation')
+      console.log(publicKey.saveArray())
+      console.log(secretKey.saveArray())
       const publicKeyCopy = publicKey.save()
       const privateKeyCopy = secretKey.save()
 
-      keyWriteStream.write(publicKeyCopy)
+      keyWriteStreamP.write(publicKeyCopy)
+      keyWriteStreamPr.write(privateKeyCopy)
 
-      const newKeys = await keyModel.saveNewKeys({
-        user_id: decodedTokenData,
-        publicKey: publicKeyCopy,
-        privateKey: privateKeyCopy,
-      })
-      const updatedUser = await userModel.updateUsers({
-        user_id: decodedTokenData,
-        keysGenerated: true,
-      })
+      // const newKeys = await keyModel.saveNewKeys({
+      //   user_id: decodedTokenData,
+      //   publicKey: publicKeyCopy,
+      //   privateKey: privateKeyCopy,
+      // })
+      // const updatedUser = await userModel.updateUsers({
+      //   user_id: decodedTokenData,
+      //   keysGenerated: true,
+      // })
 
-      const API_KEY = await dataHashing(publicKeyCopy)
+      // const API_KEY = await dataHashing(publicKeyCopy)
 
-      res.status(200).send({ API_KEY })
+      res.status(200).send('helo')
     } catch (e) {
       console.log(e)
       res.status(400).send(e)
@@ -128,25 +135,42 @@ module.exports = {
   },
   async dataEncryption(req, res, next) {
     try {
-      const decodedData = await jwtDecoding(
+      let key = ''
+      const decodedTokenData = await jwtDecoding(
         req.headers.authorization.split(' ')[1]
       )
       const { API_KEY } = req.query
-      const existingKey = await keyModel.findKeys({ user_id: decodedData })
-      const dataVerification = await dataVerifying({
-        normalData: existingKey.publicKey,
-        hashedData: API_KEY,
+      // const existingKey = await keyModel.findKeys({ user_id: decodedData })
+      // const dataVerification = await dataVerifying({
+      //   normalData: existingKey.publicKey,
+      //   hashedData: API_KEY,
+      // })
+      // if (!dataVerification)
+      //   return res.status(400).send({ message: 'API_KEY invalid!!' })
+
+      const readStreamP = fs.createReadStream(
+        `PublicKey_${decodedTokenData}_1024.txt`
+      )
+
+      readStreamP.on('data', (chunk) => {
+        key += Buffer.from(chunk)
       })
-      if (!dataVerification)
-        return res.status(400).send({ message: 'API_KEY invalid!!' })
-      const encryptedData = await encryptData({
-        encoder: global.SEAL.encoder,
-        seal: global.SEAL.seal,
-        publicKey: existingKey.publicKey,
-        data: req.body,
-        context: global.SEAL.context,
+
+      readStreamP.on('end', async () => {
+        console.time('Enc')
+        const encryptedData = await encryptData({
+          encoder: global.SEAL.encoder,
+          seal: global.SEAL.seal,
+          publicKey: key,
+          data: req.body.data,
+          context: global.SEAL.context,
+        })
+        console.timeEnd('Enc')
+        res.status(200).send({ encryptedData })
       })
-      res.status(200).send({ encryptedData })
+      readStreamP.on('error', (err) => {
+        console.log(err.message)
+      })
     } catch (e) {
       console.log(e)
       res.status(400).send(e.message)
@@ -154,33 +178,46 @@ module.exports = {
   },
   async dataDecryption(req, res, next) {
     try {
-      let p = ''
+      let p = '',
+        key = ''
       const decodedData = await jwtDecoding(
         req.headers.authorization.split(' ')[1]
       )
 
       const { API_KEY } = req.query
       const { encryptedData } = req.body
-      const existingKey = await keyModel.findKeys({
-        user_id: decodedData,
+      // const existingKey = await keyModel.findKeys({
+      //   user_id: decodedData,
+      // })
+      // const dataVerification = await dataVerifying({
+      //   normalData: existingKey.publicKey,
+      //   hashedData: API_KEY,
+      // })
+      // if (!dataVerification)
+      //   return res.status(400).send({ message: 'API_KEY invalid!!' })
+      const readStreamP = fs.createReadStream(`Private_${decodedData}_1024.txt`)
+
+      readStreamP.on('data', (chunk) => {
+        key += Buffer.from(chunk)
       })
-      const dataVerification = await dataVerifying({
-        normalData: existingKey.publicKey,
-        hashedData: API_KEY,
+
+      readStreamP.on('end', async () => {
+        console.time('Dec')
+        const decryptedData = await decryptData({
+          encoder: global.SEAL.encoder,
+          seal: global.SEAL.seal,
+          privateKey: key,
+          data: encryptedData,
+          context: global.SEAL.context,
+        })
+        console.timeEnd('Dec')
+        for (var i = 0; i < decryptedData.length; i++) {
+          p += String.fromCharCode(decryptedData[i])
+        }
+        res.status(200).send({ data: JSON.parse(p) })
+        // console.log(p)
+        // res.status(200).json(JSON.parse(p))
       })
-      if (!dataVerification)
-        return res.status(400).send({ message: 'API_KEY invalid!!' })
-      const decryptedData = await decryptData({
-        encoder: global.SEAL.encoder,
-        seal: global.SEAL.seal,
-        privateKey: existingKey.privateKey,
-        data: encryptedData,
-        context: global.SEAL.context,
-      })
-      for (var i = 0; i < decryptedData.length; i++) {
-        p += String.fromCharCode(decryptedData[i])
-      }
-      res.status(200).json(JSON.parse(p))
     } catch (e) {
       console.log(e)
       res.status(400).send(e)

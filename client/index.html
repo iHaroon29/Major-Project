@@ -32,20 +32,29 @@
       var myHeaders = new Headers()
       myHeaders.append(
         'Authorization',
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiNjM1YTk2ODRhNGJlZTU3YzJkMjJiODM0IiwiaWF0IjoxNjY2ODgxMTU2LCJleHAiOjE2NjY4OTU1NTZ9.aAoKtf3Yg3l3xSB5sdYvfFPVuEzwWhEBrNomhiizUeA'
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiNjM2YjVjZWQxNDRlNjlhNGIyYThmM2Q1IiwiaWF0IjoxNjY4MTAwMDE5LCJleHAiOjE2NjgxMTQ0MTl9.B_e-LnLRREzxzi92_tR8p5c_v2Fl1AZoEGjiiVZ13CE'
       )
+      myHeaders.append('Content-Type', 'application/json')
+
+      var raw = JSON.stringify({
+        data: '618f9fa059559fb102522afe2682d56e1cde75eb3aedd861df9030407064125078ed37373548d4683f8616025c881b7683a9c9bf8b8d5174cfb1caaa111b027f00c98c6a31941f9048f5cb3132bf8a694657cc8fc841e105f24f47332f04f06169a96ff376e9e2f7f3491c082e757a145932fdcee98ffcab99fd3f77e7387886551c11feee17b77c46c371c5d177670dc8cc462ee1a7c637c442461e132dd0695250be04d46a9c5f0898b66880e34a66d9e9d149c94891c4c10f401af4e48654f5809085ec4ef270cf4b418de0514121655a894415d619e501eff19f71bd7582304c59e464f070d359e0dbd4cd83d2809f17801f11365e0dbdcaba8072ecd777a72bb63bde98180c917a39a40056666188b6d04ce88698371f4ca4b39530b99d9dddb8e9355ee53d01cb3c531a35d8f1bd6c3e43c5db8921627e3f3c56cb5270604033ee350a292df89c38edeced8bd0f341526ce484bc39524f434a34df2a1f2a8eb2995685ef19382fabaf5f2e008b346b010d637d1d4570954afd17dbc76259866354b860e9135a703677e9a287d6197f943cf4707de9ce0fdd9682dc54879f70a76895404aff79ad2b2522ae16eab348c06050db50821e9fbb5746ad4caf22371a2f93f19af9d81fe28aef86a58b7130187fc390932981c1385406617e5a9dc739e3d707e704c10d31eb8dc5d8440d3e9401fa1b7dd4e7062d215db51f97',
+      })
 
       var requestOptions = {
-        method: 'GET',
+        method: 'POST',
         headers: myHeaders,
+        body: raw,
         redirect: 'follow',
       }
 
-      fetch('http://localhost:8000/generateKeys', requestOptions)
+      fetch(
+        'http://localhost:8000/encrypt?API_KEY=$2b$10$KhViVa8tuym7fCP2VIOJEeCG491oy8Vt1Bpv7OizTbwK8Ys/QSApK',
+        requestOptions
+      )
         .then((response) => response.text())
         .then((result) => console.log(result))
         .catch((error) => console.log('error', error))
     </script>
-    <script src="./js/index.js" type="module"></script>
+    <!-- <script src="./js/index.js" type="module"></script> -->
   </body>
 </html>

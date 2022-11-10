@@ -6,8 +6,8 @@ module.exports = {
       const seal = await SEAL()
       const schemeType = seal.SchemeType.bfv
       const securityLevel = seal.SecurityLevel.tc128
-      const polyModulusDegree = 4096
-      const bitSizes = [36, 36, 37]
+      const polyModulusDegree = 2048
+      const bitSizes = [54]
       const bitSize = 20
       const parms = seal.EncryptionParameters(schemeType)
 
@@ -31,7 +31,6 @@ module.exports = {
 
       const encoder = seal.BatchEncoder(context)
       const keyGenerator = seal.KeyGenerator(context)
-
       return { seal, context, keyGenerator, encoder }
     } catch (e) {
       console.log(e.message)

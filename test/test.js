@@ -1,78 +1,19 @@
+const fs = require('fs')
+const crypto = require('crypto')
+const pipeline = require('node:stream')
+const { createGzip } = require('node:zlib')
+const gzip = createGzip()
+
 ;(async () => {
-  // ES6 or CommonJS
-  // import SEAL from 'node-seal'
-  // const SEAL = require('node-seal')
-
-  // Using CommonJS for RunKit
-  const SEAL = require('node-seal')
-  const seal = await SEAL()
-  const schemeType = seal.SchemeType.bfv
-  const securityLevel = seal.SecurityLevel.tc128
-  const polyModulusDegree = 4096
-  const bitSizes = [36, 36, 37]
-  const bitSize = 20
-  const parms = seal.EncryptionParameters(schemeType)
-
-  // Set the PolyModulusDegree
-  parms.setPolyModulusDegree(polyModulusDegree)
-
-  // Create a suitable set of CoeffModulus primes
-  parms.setCoeffModulus(
-    seal.CoeffModulus.Create(polyModulusDegree, Int32Array.from(bitSizes))
-  )
-
-  // Set the PlainModulus to a prime of bitSize 20.
-  parms.setPlainModulus(seal.PlainModulus.Batching(polyModulusDegree, bitSize))
-
-  const context = seal.Context(
-    parms, // Encryption Parameters
-    true, // ExpandModChain
-    securityLevel // Enforce a security level
-  )
-
-  if (!context.parametersSet()) {
-    throw new Error(
-      'Could not set the parameters in the given context. Please try different encryption parameters.'
-    )
+  try {
+    const filename = 'test-data.txt'
+    const randomData = crypto.randomBytes(512 * 1024).toString('hex')
+    const writeStream = fs.createWriteStream(filename)
+    writeStream.write(randomData)
+    // const writeStreamCompressed = fs.createWriteStream('test-data.txt.gz')
+    // const readStream = fs.createReadStream(filename)
+    // readStream.pipe(gzip).pipe(writeStreamCompressed)
+  } catch (e) {
+    console.log(e.message)
   }
-
-  const encoder = seal.BatchEncoder(context)
-  const keyGenerator = seal.KeyGenerator(context)
-  const publicKey = keyGenerator.createPublicKey()
-  const secretKey = keyGenerator.secretKey()
-  const saved = secretKey.save()
-  const regen = seal.SecretKey()
-  regen.load(context, saved)
-  const encryptor = seal.Encryptor(context, publicKey)
-  const decryptor = seal.Decryptor(context, regen)
-  const evaluator = seal.Evaluator(context)
-  const a = await seal.PlainText().save()
-  let b = []
-  // Create data to be encrypted
-  for (let i = 0; i < a.length; i++) {
-    b.push(a.charCodeAt(i))
-  }
-  const array = Int32Array.from(b)
-  // Encode the Array
-  const plainText = encoder.encode(array)
-
-  // Encrypt the PlainText
-  const cipherText = encryptor.encrypt(plainText)
-
-  // Add the CipherText to itself and store it in the destination parameter (itself)
-  // evaluator.add(cipherText, cipherText, cipherText) // Op (A), Op (B), Op (Dest)
-
-  // Or create return a new cipher with the result (omitting destination parameter)
-  const cipher2x = evaluator.add(cipherText, cipherText)
-
-  const test_1 = cipherText.save()
-  console.log(test_1)
-  const test_2 = seal.CipherText()
-  test_2.load(context, test_1)
-
-  // Decrypt the CipherText
-  const decryptedPlainText = decryptor.decrypt(test_2)
-  // Decode the PlainText
-  const decodedArray = encoder.decode(decryptedPlainText)
-  console.log('decodedArray', decodedArray)
 })()
